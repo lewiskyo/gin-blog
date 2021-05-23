@@ -1,12 +1,15 @@
 package routers
 
 import (
+	"gin-blog/global"
 	"gin-blog/internal/middleware"
+	"gin-blog/internal/routers/api"
 	v1 "gin-blog/internal/routers/api/v1"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-programming-tour-book/blog-service/docs"
 	ginSwagger "github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	"net/http"
 )
 
 func NewRouter() *gin.Engine {
@@ -15,6 +18,11 @@ func NewRouter() *gin.Engine {
 	r.Use(gin.Recovery())
 	r.Use(middleware.Translations())
 	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
+
+	upload := api.NewUpload()
+	// curl -X POST http://127.0.0.1:8080/upload/file -F file=@"./internal/dao/sss.jpg"  -F type=1
+	r.POST("/upload/file", upload.UploadFile)
+	r.StaticFS("/static", http.Dir(global.AppSetting.UploadSavePath))
 
 	article := v1.NewArticle()
 	tag := v1.NewTag()
