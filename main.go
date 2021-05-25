@@ -1,20 +1,35 @@
 package main
 
 import (
+	"flag"
 	"gin-blog/global"
 	"gin-blog/internal/model"
 	"gin-blog/internal/routers"
 	"gin-blog/pkg/logger"
 	"gin-blog/pkg/setting"
+	"gin-blog/pkg/tracer"
 	"github.com/gin-gonic/gin"
 	"gopkg.in/natefinch/lumberjack.v2"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 )
 
+var (
+	port      string
+	runMode   string
+	config    string
+	isVersion bool
+)
+
 func init() {
-	err := setupSetting()
+	err := setupFlag()
+	if err != nil {
+		log.Fatalf("init.setupFlag err: %v", err)
+	}
+
+	err = setupSetting()
 	if err != nil {
 		log.Fatalf("init.setupSetting err: %v", err)
 	}
@@ -27,6 +42,11 @@ func init() {
 	err = setupDBEngine()
 	if err != nil {
 		log.Fatalf("init.setupDBEngine err: %v", err)
+	}
+
+	err = setupTracer()
+	if err != nil {
+		log.Fatalf("init.setupTracer err: %v", err)
 	}
 }
 
@@ -47,8 +67,18 @@ func main() {
 	s.ListenAndServe()
 }
 
+func setupFlag() error {
+	flag.StringVar(&port, "port", "", "启动端口")
+	flag.StringVar(&runMode, "mode", "", "启动模式")
+	flag.StringVar(&config, "config", "configs/", "指定要使用的配置文件路径")
+	flag.BoolVar(&isVersion, "version", false, "编译信息")
+	flag.Parse()
+
+	return nil
+}
+
 func setupSetting() error {
-	setting, err := setting.NewSetting()
+	setting, err := setting.NewSetting(strings.Split(config, ",")...)
 	if err != nil {
 		return err
 	}
@@ -93,5 +123,17 @@ func setupDBEngine() error {
 		return err
 	}
 
+	return nil
+}
+
+func setupTracer() error {
+	jaegerTracer, _, err := tracer.NewJaegerTracer(
+		"blog-service",
+		"127.0.0.1:6831",
+	)
+	if err != nil {
+		return err
+	}
+	global.Tracer = jaegerTracer
 	return nil
 }

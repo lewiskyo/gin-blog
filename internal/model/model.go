@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gin-blog/global"
 	"gin-blog/pkg/setting"
+	otgorm "github.com/eddycjy/opentracing-gorm"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"time"
@@ -46,6 +47,7 @@ func NewDBEngine(databaseSetting *setting.DatabaseSettingS) (*gorm.DB, error) {
 	db.DB().SetMaxIdleConns(databaseSetting.MaxIdleConns)
 	db.DB().SetMaxOpenConns(databaseSetting.MaxOpenConns)
 
+	otgorm.AddGormCallbacks(db)
 	return db, nil
 }
 
